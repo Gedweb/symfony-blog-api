@@ -1,0 +1,38 @@
+services:
+    webserver:
+        build:
+            context: docker/nginx
+        restart: unless-stopped
+        volumes:
+            - ./var/log/nginx:/var/log/nginx
+            - .:/application
+        ports:
+            - 80:80
+        depends_on:
+            - php
+    php:
+        build:
+            context: docker/php
+        restart: unless-stopped
+        volumes:
+            - ./var/log/nginx:/var/log/nginx
+            - .:/application
+        links:
+            - database
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        environment:
+            PHP_IDE_CONFIG: "serverName=blog"
+    database:
+        build:
+            context: docker/database
+        restart: unless-stopped
+        environment:
+            MYSQL_ROOT_PASSWORD: root
+        ports:
+            - 3306:3306
+        healthcheck:
+            test: [ "CMD", "mysqladmin" ,"ping", "-h", "localhost" ]
+            timeout: 5s
+            retries: 5
+            start_period: 10s
